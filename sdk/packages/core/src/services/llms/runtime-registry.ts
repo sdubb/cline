@@ -1,4 +1,4 @@
-import type { ApiHandler } from "@cline/llms";
+import type { ApiHandler, ModelCollection } from "@cline/llms";
 import {
 	BUILT_IN_PROVIDER_IDS,
 	createHandler as createProviderHandler,
@@ -115,17 +115,14 @@ export class DefaultLlmsSdk implements LlmsSdk {
 	}
 
 	async getBuiltInProviders(): Promise<BuiltInProviderSummary[]> {
-		const collections = await Promise.all(
+		const collections: Array<ModelCollection | undefined> = await Promise.all(
 			BUILT_IN_PROVIDER_IDS.map((providerId: string) =>
 				getProviderCollection(providerId),
 			),
 		);
 		return collections
-			.filter(
-				(collection): collection is NonNullable<typeof collection> =>
-					collection !== undefined,
-			)
-			.map((collection) => toBuiltInProviderSummary({ collection }));
+			.filter((collection): collection is ModelCollection => collection !== undefined)
+			.map((collection: ModelCollection) => toBuiltInProviderSummary({ collection }));
 	}
 
 	getModels(providerId: string): string[] {

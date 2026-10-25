@@ -65,6 +65,39 @@ export { ensureCustomProvidersLoaded } from "./local-provider-registry";
 const CLINE_PROVIDER_ID = "cline";
 const CLINE_PASS_PROVIDER_ID = "cline-pass";
 
+function normalizeStoredProviderProtocol(value: unknown): ProviderProtocol | undefined {
+	switch (value) {
+		case "anthropic":
+		case "gemini":
+		case "openai-chat":
+		case "openai-responses":
+		case "openai-r1":
+		case "ai-sdk":
+			return value as ProviderProtocol;
+		default:
+			return undefined;
+	}
+}
+
+function normalizeStoredProviderClient(value: unknown): ProviderClient | undefined {
+	switch (value) {
+		case "anthropic":
+		case "ai-sdk":
+		case "ai-sdk-community":
+		case "openai":
+		case "openai-compatible":
+		case "openai-r1":
+		case "gemini":
+		case "bedrock":
+		case "custom":
+		case "fetch":
+		case "vertex":
+			return value as ProviderClient;
+		default:
+			return undefined;
+	}
+}
+
 export interface ListLocalProvidersOptions {
 	isClinePassEnabled?: boolean;
 }
@@ -756,14 +789,12 @@ async function prepareProviderUpdate(
 			: request.capabilities === null
 				? undefined
 				: [...new Set(request.capabilities)];
-	const protocol =
-		request.protocol === undefined
-			? existingEntry.provider.protocol
-			: (request.protocol ?? undefined);
-	const client =
-		request.client === undefined
-			? existingEntry.provider.client
-			: (request.client ?? undefined);
+	const protocol = normalizeStoredProviderProtocol(
+		request.protocol === undefined ? existingEntry.provider.protocol : request.protocol,
+	);
+	const client = normalizeStoredProviderClient(
+		request.client === undefined ? existingEntry.provider.client : request.client,
+	);
 
 	const apiKey =
 		request.apiKey === undefined
@@ -867,8 +898,12 @@ async function prepareProviderUpdate(
 			name: providerName,
 			baseUrl,
 			defaultModelId,
-			protocol,
-			client,
+				// The persisted registry is validated by StoredModelsFileSchema at
+				// write time. Keep the runtime aliases here explicit because the
+				// bundled catalog and the SDK can carry different zod declaration
+				// instances during a source build.
+				protocol: protocol as any,
+				client: client as any,
 			capabilities,
 			modelsSourceUrl: nextModelsSourceUrl,
 		},

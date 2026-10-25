@@ -1,4 +1,9 @@
-import type { AgentEvent, AgentTool } from "@cline/shared";
+import type {
+	AgentEvent,
+	AgentTool,
+	ToolApprovalRequest,
+	ToolApprovalResult,
+} from "@cline/shared";
 import {
 	createBuiltinTools,
 	resolveToolPresetName,
@@ -123,6 +128,9 @@ export function createSessionSpawnTool(
 	config: CoreSessionConfig,
 	rootSessionId: string,
 	toolExecutors?: Partial<ToolExecutors>,
+	requestToolApproval?: (
+		request: ToolApprovalRequest,
+	) => Promise<ToolApprovalResult> | ToolApprovalResult,
 ): AgentTool {
 	const lifecycle = createSessionSubAgentLifecycleCallbacks(
 		deps,
@@ -140,7 +148,13 @@ export function createSessionSpawnTool(
 			: [];
 		if (config.enableSpawnAgent) {
 			tools.push(
-				createSessionSpawnTool(deps, config, rootSessionId, toolExecutors),
+				createSessionSpawnTool(
+					deps,
+					config,
+					rootSessionId,
+					toolExecutors,
+					requestToolApproval,
+				),
 			);
 		}
 		return filterDisabledTools(tools);
@@ -184,5 +198,7 @@ export function createSessionSpawnTool(
 		},
 		createSubAgentTools,
 		...lifecycle,
+		requestToolApproval,
+		authorizeSubAgentSpawn: config.authorizeSubAgentSpawn,
 	}) as AgentTool;
 }

@@ -105,6 +105,15 @@ export interface SpawnAgentToolConfig {
 		request: ToolApprovalRequest,
 	) => Promise<ToolApprovalResult> | ToolApprovalResult;
 	/**
+	 * Host-owned governance gate for native delegation.  The tool is part of the
+	 * embedded runtime, but the host still owns identity, tenant and chain-of-
+	 * command policy.  This runs before a child runtime is created.
+	 */
+	authorizeSubAgentSpawn?: (
+		input: SpawnAgentInput,
+		context: AgentToolContext,
+	) => Promise<{ allowed: boolean; reason?: string }> | { allowed: boolean; reason?: string };
+	/**
 	 * Optional logger forwarded to spawned sub-agent runs.
 	 */
 	logger?: BasicLogger;
@@ -123,6 +132,12 @@ export function createSpawnAgentTool(
 		description: `Spawn a sub-agent with custom instructions for a specialized task. Waits for the sub-agent to finish and returns its result before your next step.`,
 		inputSchema: zodToJsonSchema(SpawnAgentInputSchema),
 		execute: async (input, context) => {
+			if (config.authorizeSubAgentSpawn) {
+				const authorization = await config.authorizeSubAgentSpawn(input, context);
+				if (!authorization.allowed) {
+					throw new Error(authorization.reason || "Native delegation was denied by the host policy.");
+				}
+			}
 			const tools = config.createSubAgentTools
 				? await config.createSubAgentTools(input, context)
 				: (config.subAgentTools ?? []);

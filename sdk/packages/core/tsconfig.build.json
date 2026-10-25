@@ -10,6 +10,7 @@
 		"incremental": false
 	},
 	"include": [
+		"src/**/*.d.ts",
 		"src/index.ts",
 		"src/hub/index.ts",
 		"src/cloud/index.ts",

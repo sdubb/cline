@@ -14,6 +14,7 @@ import type {
 	SessionExecutionConfig,
 	SessionPromptConfig,
 	SessionWorkspaceConfig,
+	AgentToolContext,
 } from "@cline/shared";
 import type { ToolRoutingRule } from "../extensions/tools/model-tool-routing";
 import type { TeamEvent } from "../extensions/tools/team";
@@ -287,6 +288,11 @@ export interface CoreSessionConfig
 		| Promise<ConsecutiveMistakeLimitDecision>
 		| ConsecutiveMistakeLimitDecision;
 	toolRoutingRules?: ToolRoutingRule[];
+	/** Host-owned policy gate for native delegated-agent creation. */
+	authorizeSubAgentSpawn?: (
+		input: { systemPrompt: string; task: string },
+		context: AgentToolContext,
+	) => Promise<{ allowed: boolean; reason?: string }> | { allowed: boolean; reason?: string };
 	/**
 	 * Optional skill allowlist for the `skills` tool. When provided, only these
 	 * skills are surfaced in tool metadata and invocable by name.

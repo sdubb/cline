@@ -419,6 +419,13 @@ export interface ShellExecutorOptions {
 	env?: Record<string, string>;
 
 	/**
+	 * Inherit the hosting process environment. Governed hosts should set this
+	 * to false and provide an explicit allow-listed environment.
+	 * @default true
+	 */
+	inheritHostEnv?: boolean;
+
+	/**
 	 * Whether to combine stdout and stderr
 	 * @default true
 	 */
@@ -447,6 +454,7 @@ interface SpawnConfig {
 	args: string[];
 	cwd: string;
 	env: Record<string, string>;
+	inheritHostEnv: boolean;
 	input?: string;
 }
 
@@ -732,7 +740,7 @@ function spawnAndCollect(
 
 		const child = spawn(config.executable, config.args, {
 			cwd: config.cwd,
-			env: { ...process.env, ...config.env },
+			env: config.inheritHostEnv ? { ...process.env, ...config.env } : config.env,
 			stdio: ["pipe", "pipe", "pipe"],
 			detached: !isWindows,
 			// Prevent a console window from flashing on Windows when the
@@ -1137,6 +1145,7 @@ export function createShellExecutor(
 		shell = getDefaultShell(process.platform),
 		timeoutMs = 30000,
 		env = {},
+		inheritHostEnv = true,
 		combineOutput = true,
 		executionController,
 		processStartTokenProbe = probeProcessStartTokenAsync,
@@ -1168,6 +1177,7 @@ export function createShellExecutor(
 				args: invocation.args,
 				cwd,
 				env,
+				inheritHostEnv,
 				input: invocation.input,
 			},
 			context,
